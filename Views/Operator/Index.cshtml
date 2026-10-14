@@ -1,0 +1,130 @@
+@model List<WeighingTransaction>
+@{
+    ViewData["Title"] = "Operator Control Center";
+    var settings = ViewBag.Settings as TruckMate.Services.AppSettings;
+    var expiryDays = settings?.PendingExpiryDays ?? 7;
+}
+
+<div class="d-md-flex align-items-start justify-content-between mb-3">
+    <div>
+        <div class="page-title">Operator Control Center</div>
+        <div class="page-sub">Scale check, first &amp; second weight capture, tickets and reprints.</div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div id="scale-widget">
+            <div class="live-scale">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-uppercase" style="font-size:11px;color:#94a3b8;letter-spacing:1px;">Live Scale</span>
+                    <span class="scale-state nosignal" id="scale-state"><span class="dot"></span> No signal</span>
+                </div>
+                <div class="scale-readout mt-2" id="scale-readout">-- <small>kg</small></div>
+                <div class="text-light mt-2" style="font-size:13px;color:#e2e8f0;" id="scale-message">Loading…</div>
+                <div class="mt-3 hw-grid">
+                    <div class="hw-item" data-device="Barrier Left"><span class="name">Barrier L</span><span class="status">…</span></div>
+                    <div class="hw-item" data-device="Barrier Right"><span class="name">Barrier R</span><span class="status">…</span></div>
+                    <div class="hw-item" data-device="Traffic Light"><span class="name">Light</span><span class="status">…</span></div>
+                    <div class="hw-item" data-device="Camera"><span class="name">Camera</span><span class="status">…</span></div>
+                    <div class="hw-item" data-device="Indicator"><span class="name">Indicator</span><span class="status">…</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sim-panel mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="sim-title">Scale simulator</span>
+                <span class="badge bg-warning text-dark">mock device</span>
+            </div>
+            <p class="mb-2" style="font-size:12px;">Simulate the indicator reading while a vehicle is on the scale.</p>
+            <div class="sim-preset">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="0">0 kg (empty)</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="50">50 kg</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="1250">1,250 kg</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-online="true">Online</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-sim-online="false">Offline</button>
+            </div>
+            <div class="input-group mt-2">
+                <input type="number" class="form-control form-control-sm" id="simCustom" placeholder="Custom weight (kg)" data-sim-enter />
+                <button class="btn btn-sm btn-outline-dark" type="button" data-sim-custom="#simCustom">Set</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">Operation</div>
+            <div class="card-body">
+                <form asp-action="Proceed" method="post">
+                    <label class="form-label fw-semibold">Vehicle Number</label>
+                    <input class="form-control" name="vehicleNo" placeholder="e.g. LP-7516" required />
+                    <div class="d-flex align-items-center gap-2 mt-2 mb-3">
+                        <div class="form-check flex-shrink-0">
+                            <input class="form-check-input" type="checkbox" name="noPrint" id="evalNoPrint" />
+                            <label class="form-check-label" for="evalNoPrint" style="font-size:13px;">No print</label>
+                        </div>
+                        <span class="text-muted" style="font-size:12px;">Vehicle must return for a 2nd round.</span>
+                    </div>
+                    <button id="proceed-btn" class="btn btn-lg w-100"
+                            style="background:#0ea5e9;border-color:#0ea5e9;color:#fff;" disabled>
+                        PROCEED
+                    </button>
+                    <p class="mt-2 mb-0" style="font-size:12px;color:#64748b;">
+                        Proceed stays disabled until the scale reads 0 and the indicator is online. First round: 1st weight entry. Pending vehicle: 2nd weight entry.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Pending Transactions</span>
+        <a asp-action="Transactions" class="small">View all transactions</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr>
+                    <th>Transaction no</th>
+                    <th>Vehicle</th>
+                    <th class="num">1st weight</th>
+                    <th>1st remark</th>
+                    <th>Time</th>
+                    <th>Days waiting</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    var days = (DateTime.UtcNow - t.FirstWeighedAt).TotalDays;
+                    var expiring = days >= expiryDays;
+                    <tr>
+                        <td class="mono">@t.TicketNo</td>
+                        <td><strong>@t.VehicleNo</strong></td>
+                        <td class="num mono">@t.FirstWeight.ToString("#,##0.###") / @(t.Material?.Name)</td>
+                        <td>@(string.IsNullOrEmpty(t.Remark) ? "—" : t.Remark)</td>
+                        <td class="mono">@t.FirstWeighedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            @Math.Floor(days) day(s)
+                            @if (expiring)
+                            {
+                                <span class="badge badge-notcompleted">expiring</span>
+                            }
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary" asp-action="SecondWeight" asp-route-vehicleNo="@t.VehicleNo">Start 2nd weight</a>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="7" class="empty">No pending transactions.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

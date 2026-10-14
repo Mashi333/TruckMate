@@ -1,0 +1,144 @@
+@model List<WeighingTransaction>
+@{
+    ViewData["Title"] = "Records";
+    var status = ViewBag.Status as string ?? "All";
+    var search = ViewBag.Search as string;
+    var total = ViewBag.Total as int? ?? 0;
+    var selected = ViewBag.Selected as WeighingTransaction;
+    string[] tabs = { "All", "Pending", "Completed", "Not completed", "Cancelled" };
+}
+
+<div class="page-title">Records</div>
+<div class="page-sub mb-3">All weighing records. Select one to view or cancel it.</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label class="form-label small fw-semibold">Search</label>
+                <input class="form-control form-control-sm" name="search" value="@search" placeholder="Ticket / vehicle" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold">Status</label>
+                <select class="form-select form-select-sm" name="status">
+                    @foreach (var s in tabs)
+                    {
+                        <option value="@s" selected="@(status == s)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold">From Date</label>
+                <input type="date" class="form-control form-control-sm" name="from" value="@(ViewBag.From?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-semibold">To Date</label>
+                <input type="date" class="form-control form-control-sm" name="to" value="@(ViewBag.To?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary btn-sm" style="background:#0ea5e9;border-color:#0ea5e9;">FILTER</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">All records</div>
+            <div class="table-responsive">
+                <table class="table-tm">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Vehicle</th>
+                            <th>Direction</th>
+                            <th>Sub type</th>
+                            <th class="num">Net (kg)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            var active = selected != null && selected.TransactionId == t.TransactionId;
+                            <tr class="@(active ? "table-primary" : "")">
+                                <td class="mono"><a asp-action="Records" asp-route-id="@t.TransactionId" asp-route-status="@status" asp-route-search="@search">@t.TicketNo</a></td>
+                                <td><strong>@t.VehicleNo</strong></td>
+                                <td>@t.Direction</td>
+                                <td>@t.SubType</td>
+                                <td class="num mono">@(t.NetWeight?.ToString("#,##0") ?? "-")</td>
+                                <td><span class="badge badge-@(t.Status.ToString().ToLowerInvariant())">@(t.IsCancelled ? "Cancelled" : t.Status.ToString().Replace("_"," "))</span></td>
+                            </tr>
+                        }
+                        @if (Model.Count == 0)
+                        {
+                            <tr><td colspan="6" class="empty">No records found.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (total > Model.Count)
+            {
+                <div class="card-footer" style="font-size:12px;">Showing @Model.Count of @total records.</div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        @if (selected is null)
+        {
+            <div class="card"><div class="card-body empty">Select a record to view or cancel it.</div></div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <span>
+                        Record @selected.TicketNo
+                        <span class="badge badge-@(selected.Status.ToString().ToLowerInvariant())">@selected.Status.ToString().Replace("_"," ")</span>
+                    </span>
+                </div>
+                <div class="card-body" style="font-size:14px;">
+                    <div class="mb-2"><span class="text-muted">Vehicle</span><br /><strong>@selected.VehicleNo</strong></div>
+                    <div class="mb-2"><span class="text-muted">Direction / Sub Type</span><br />@selected.Direction · @selected.SubType</div>
+                    <div class="mb-2"><span class="text-muted">Supplier</span><br />@selected.Supplier</div>
+                    <div class="mb-2"><span class="text-muted">Material</span><br />@selected.Material?.Name</div>
+                    <div class="mb-2"><span class="text-muted">Transporter / Driver</span><br />@selected.Transporter / @selected.DriverDetails</div>
+                    <div class="mb-2">
+                        <span class="text-muted">1st weight</span><br />
+                        <span class="mono">@selected.FirstWeight.ToString("#,##0.###") kg</span>
+                        <span class="text-muted"> · @selected.FirstWeighedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") · @selected.FirstOperator?.FullName</span>
+                    </div>
+                    <div class="mb-2"><span class="text-muted">2nd weight</span><br /><span class="mono">@(selected.SecondWeight?.ToString("#,##0.###")) kg</span> @(selected.SecondWeighedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</div>
+                    <div class="mb-3"><span class="text-muted">Net weight</span><br /><span class="mono fw-bold">@(selected.NetWeight?.ToString("#,##0.###")) kg</span></div>
+
+                    @if (selected.IsCancelled)
+                    {
+                        <div class="alert alert-secondary py-2" style="font-size:13px;">Cancelled: @selected.CancelReason</div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-primary btn-sm" asp-action="Ticket" asp-controller="Operator" asp-route-id="@selected.TransactionId" asp-route-round="2">VIEW TICKET</a>
+                        @if (!selected.IsCancelled)
+                        {
+                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="collapse" data-bs-target="#cancelForm">CANCEL RECORD</button>
+                        }
+                    </div>
+
+                    @if (!selected.IsCancelled)
+                    {
+                        <div class="collapse mt-3" id="cancelForm">
+                            <form asp-action="CancelRecord" method="post">
+                                <input type="hidden" name="id" value="@selected.TransactionId" />
+                                <label class="form-label" for="cancelReason">Cancel reason *</label>
+                                <input class="form-control mb-2" name="reason" id="cancelReason" required placeholder="Cancelling asks for a reason and is logged." />
+                                <button class="btn btn-danger btn-sm">CONFIRM CANCEL</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

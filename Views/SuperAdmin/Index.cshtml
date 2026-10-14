@@ -1,0 +1,79 @@
+@model List<Operator>
+@{
+    ViewData["Title"] = "Users and roles";
+}
+
+<div class="page-title">Users and roles</div>
+<div class="page-sub mb-3">Create users and assign each one a role.</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Users</span>
+        <button class="btn btn-sm btn-primary" style="background:#0ea5e9;border-color:#0ea5e9;" data-bs-toggle="collapse" data-bs-target="#addUserForm">Add user</button>
+    </div>
+
+    <div class="collapse" id="addUserForm">
+        <div class="card-body border-bottom" style="background:#f8fafc;">
+            <form asp-action="CreateUser" method="post" class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Full name *</label>
+                    <input class="form-control form-control-sm" name="fullName" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Username *</label>
+                    <input class="form-control form-control-sm" name="username" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Temporary password *</label>
+                    <input class="form-control form-control-sm" name="password" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Role *</label>
+                    <select class="form-select form-select-sm" name="role">
+                        <option value="Operator">Operator</option>
+                        <option value="Admin">Admin</option>
+                        <option value="SuperAdmin">Super Admin</option>
+                    </select>
+                </div>
+                <div class="col-md-4 form-check align-self-end">
+                    <input class="form-check-input" type="checkbox" name="isActive" value="true" id="activeAcct" checked />
+                    <label class="form-check-label small" for="activeAcct">Active account</label>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-sm btn-success">SAVE USER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td><strong>@u.FullName</strong></td>
+                        <td>@u.Username</td>
+                        <td><span class="badge @(u.Role == OperatorRole.SuperAdmin ? "badge-cancelled" : u.Role == OperatorRole.Admin ? "badge-pending" : "badge-completed")">@u.Role</span></td>
+                        <td><span class="badge @(u.IsActive ? "badge-completed" : "badge-cancelled")">@(u.IsActive ? "Active" : "Inactive")</span></td>
+                        <td>
+                            <form asp-action="ToggleUser" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@u.OperatorId" />
+                                <button class="btn btn-sm btn-outline-secondary">Edit</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

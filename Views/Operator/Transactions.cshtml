@@ -1,0 +1,86 @@
+@model List<WeighingTransaction>
+@{
+    ViewData["Title"] = "Transactions";
+    var status = ViewBag.Status as string ?? "All";
+    var search = ViewBag.Search as string;
+    var total = ViewBag.Total as int? ?? 0;
+    string[] tabs = { "All", "Pending", "Completed", "Not completed" };
+}
+
+<div class="page-title">Transactions</div>
+<div class="page-sub mb-3">Recent weighings and their status. Pending vehicles can start their 2nd weight from here.</div>
+
+<div class="card">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <ul class="nav nav-pills">
+            @foreach (var tab in tabs)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(status == tab ? "active" : "")" style="@(status == tab ? "background:#0ea5e9;" : "")"
+                       asp-action="Transactions" asp-route-status="@tab">@tab</a>
+                </li>
+            }
+        </ul>
+        <form asp-action="Transactions" method="get" class="d-flex gap-2">
+            <input type="hidden" name="status" value="@status" />
+            <input class="form-control form-control-sm" name="search" value="@search" placeholder="Search ticket / vehicle" />
+            <button class="btn btn-sm btn-outline-secondary">Search</button>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Vehicle</th>
+                    <th>Direction</th>
+                    <th>Sub type</th>
+                    <th class="num">1st (kg)</th>
+                    <th class="num">2nd (kg)</th>
+                    <th class="num">Net (kg)</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td class="mono">@t.TicketNo</td>
+                        <td><strong>@t.VehicleNo</strong></td>
+                        <td>@t.Direction</td>
+                        <td>@t.SubType</td>
+                        <td class="num mono">@t.FirstWeight.ToString("#,##0")</td>
+                        <td class="num mono">@(t.SecondWeight?.ToString("#,##0") ?? "-")</td>
+                        <td class="num mono">@(t.NetWeight?.ToString("#,##0") ?? "-")</td>
+                        <td class="mono">@t.FirstWeighedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td><span class="badge badge-@(t.Status.ToString().ToLowerInvariant())">@t.Status.ToString().Replace("_"," ")</span></td>
+                        <td>
+                            @if (t.Status == TruckMate.Domain.TransactionStatus.PENDING)
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-action="SecondWeight" asp-route-vehicleNo="@t.VehicleNo">Start 2nd weight</a>
+                            }
+                            else
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Ticket" asp-route-id="@t.TransactionId" asp-route-round="2">View ticket</a>
+                            }
+                            @if (t.Status == TruckMate.Domain.TransactionStatus.NOT_COMPLETED)
+                            {
+                                <span class="text-muted" style="font-size:12px;">Admin reopen needed</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="10" class="empty">No records found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (total > Model.Count)
+    {
+        <div class="card-footer" style="font-size:12px;">Showing the most recent @Model.Count of @total records.</div>
+    }
+</div>

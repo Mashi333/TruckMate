@@ -1,0 +1,148 @@
+@model ReportResultViewModel
+@{
+    ViewData["Title"] = "Reports";
+    var f = Model.Filter;
+}
+
+<div class="page-title">Reports</div>
+<div class="page-sub mb-3">Generate and export transaction reports with filters. Analytics Mode</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="post" asp-action="Index">
+            <div class="row g-2">
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">From Date</label>
+                    <input type="date" class="form-control form-control-sm" name="From" value="@(f.From?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">To Date</label>
+                    <input type="date" class="form-control form-control-sm" name="To" value="@(f.To?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Vehicle Number</label>
+                    <input class="form-control form-control-sm" name="VehicleNo" value="@f.VehicleNo" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Direction</label>
+                    <select class="form-select form-select-sm" name="Direction">
+                        <option value="">All</option>
+                        @foreach (var it in f.Directions)
+                        {
+                            <option value="@it.Value" selected="@(f.Direction == it.Value)">@it.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Supplier</label>
+                    <select class="form-select form-select-sm" name="Supplier">
+                        <option value="">All</option>
+                        @foreach (var it in f.Suppliers)
+                        {
+                            <option value="@it.Value" selected="@(f.Supplier == it.Value)">@it.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Material</label>
+                    <select class="form-select form-select-sm" name="Material">
+                        <option value="">All</option>
+                        @foreach (var it in f.Materials)
+                        {
+                            <option value="@it.Value" selected="@(f.Material == it.Value)">@it.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Transporter</label>
+                    <select class="form-select form-select-sm" name="Transporter">
+                        <option value="">All</option>
+                        @foreach (var it in f.Transporters)
+                        {
+                            <option value="@it.Value" selected="@(f.Transporter == it.Value)">@it.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Status</label>
+                    <select class="form-select form-select-sm" name="Status">
+                        <option value="">All</option>
+                        @foreach (var it in f.Statuses)
+                        {
+                            <option value="@it.Value" selected="@(f.Status == it.Value)">@it.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm" style="background:#0ea5e9;border-color:#0ea5e9;">Search</button>
+                    <button type="submit" class="btn btn-danger btn-sm" formaction="@Url.Action("ExportPdf")">PDF</button>
+                    <button type="submit" class="btn btn-success btn-sm" formaction="@Url.Action("ExportExcel")">Excel</button>
+                    <a class="btn btn-outline-secondary btn-sm" asp-action="Index" asp-route-searched="false">Clear</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card stat"><div class="n">@Model.TotalRecords</div><div class="l">Total Records</div></div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat"><div class="n" style="color:#d97706;">@Model.CountPending</div><div class="l">Pending</div></div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat"><div class="n" style="color:#16a34a;">@Model.CountCompleted</div><div class="l">Completed</div></div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat"><div class="n" style="color:#dc2626;">@Model.CountNotCompleted</div><div class="l">Not completed</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat"><div class="n">@Model.TotalNetWeight.ToString("#,##0") kg</div><div class="l">Total Net Weight</div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Filtered Results · @Model.TotalRecords record(s) found</div>
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Vehicle</th>
+                    <th>Job no</th>
+                    <th>Direction</th>
+                    <th>Supplier</th>
+                    <th>Material</th>
+                    <th class="num">1st (kg)</th>
+                    <th class="num">2nd (kg)</th>
+                    <th class="num">Net (kg)</th>
+                    <th>Operator</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model.Rows)
+                {
+                    <tr>
+                        <td class="mono">@t.TicketNo</td>
+                        <td><strong>@t.VehicleNo</strong></td>
+                        <td class="mono">@t.OrderNo</td>
+                        <td>@t.Direction</td>
+                        <td>@t.Supplier</td>
+                        <td>@t.Material?.Name</td>
+                        <td class="num mono">@t.FirstWeight.ToString("#,##0")</td>
+                        <td class="num mono">@(t.SecondWeight?.ToString("#,##0") ?? "-")</td>
+                        <td class="num mono">@(t.NetWeight?.ToString("#,##0") ?? "-")</td>
+                        <td>@t.FirstOperator?.FullName</td>
+                        <td><span class="badge badge-@(t.Status.ToString().ToLowerInvariant())">@t.Status.ToString().Replace("_"," ")</span></td>
+                    </tr>
+                }
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr><td colspan="11" class="empty">No records match the selected filters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

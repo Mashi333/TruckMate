@@ -1,0 +1,108 @@
+@model FirstWeightViewModel
+@{
+    ViewData["Title"] = "First Weight Entry";
+}
+
+<div class="d-md-flex align-items-start justify-content-between mb-3">
+    <div>
+        <div class="page-title">First Weight Entry</div>
+        <div class="page-sub">Enter the details and capture the 1st weight. · Step 1 of 2</div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Back to Operation</a>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger py-2">
+        <strong>Fix the fields below before saving the first weight.</strong>
+        <ul class="mb-0 mt-1">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="live-scale" id="scale-widget">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-uppercase" style="font-size:11px;color:#94a3b8;letter-spacing:1px;">1st weight</span>
+                <span class="scale-state nosignal" id="scale-state"><span class="dot"></span> No signal</span>
+            </div>
+            <div class="scale-readout mt-2" id="scale-readout" data-scale-widget>-- <small>kg</small></div>
+            <div class="text-light mt-2" style="font-size:13px;" id="scale-message">Vehicle on scale – waiting for stable weight…</div>
+        </div>
+        <p class="text-muted mt-2" style="font-size:12px;">The weight shown is captured when you save. The scale must be stable.</p>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">First round details</div>
+            <div class="card-body">
+                <form asp-action="FirstWeight" method="post" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="VehicleNo" class="form-label"></label>
+                            <input asp-for="VehicleNo" class="form-control" placeholder="e.g. LP-7516" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Direction" class="form-label"></label>
+                            <select asp-for="Direction" asp-items="Model.Directions" class="form-select"></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="SubType" class="form-label"></label>
+                            <select asp-for="SubType" asp-items="Model.SubTypes" class="form-select">
+                                <option value="">Select a sub type.</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Supplier" class="form-label"></label>
+                            <select asp-for="Supplier" asp-items="Model.Suppliers" class="form-select">
+                                <option value="">Select a supplier.</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="MaterialId" class="form-label"></label>
+                            <div id="material-wrap">
+                                <select asp-for="MaterialId" asp-items="Model.Materials" id="material-select" class="form-select">
+                                    <option value="">Select a material.</option>
+                                    <option value="__new__">＋ Add new material…</option>
+                                </select>
+                                <div id="material-add" class="input-group mt-1 d-none">
+                                    <input type="text" id="material-new" class="form-control form-control-sm" placeholder="New material name" maxlength="80" data-material-enter />
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="material-add-btn">Add</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="material-add-cancel">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Transporter" class="form-label"></label>
+                            <select asp-for="Transporter" asp-items="Model.Transporters" class="form-select">
+                                <option value="">—</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Driver" class="form-label"></label>
+                            <input asp-for="Driver" class="form-control" placeholder="Driver name (manual entry)" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="OrderNo" class="form-label"></label>
+                            <input asp-for="OrderNo" class="form-control" placeholder="Job / order number" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Remark" class="form-label"></label>
+                            <textarea asp-for="Remark" class="form-control" rows="2" placeholder="1st remark" maxlength="300" style="resize:none;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <a asp-action="Index" class="btn btn-secondary">CANCEL</a>
+                        <button type="submit" class="btn btn-primary ms-auto" style="background:#0ea5e9;border-color:#0ea5e9;">SAVE FIRST WEIGHT</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

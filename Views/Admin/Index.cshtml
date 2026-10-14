@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var days = ViewBag.Days as List<DateTime>;
+    var perDay = ViewBag.PerDay as List<int>;
+    var max = perDay?.Count > 0 ? Math.Max(1, perDay.Max()) : 1;
+}
+
+<div class="page-title">Dashboard</div>
+<div class="page-sub mb-3">Weighing activity for the last 7 days.</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card stat"><div class="n">@ViewBag.WeighedToday</div><div class="l">Weighed today</div></div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat"><div class="n" style="color:#d97706;">@ViewBag.Pending</div><div class="l">Pending</div></div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat"><div class="n" style="color:#16a34a;">@ViewBag.Completed</div><div class="l">Completed</div></div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card stat"><div class="n" style="color:#dc2626;">@ViewBag.NotCompleted</div><div class="l">Not completed</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat"><div class="n">@ViewBag.Cancelled</div><div class="l">Cancelled</div></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header">Vehicles weighed per day</div>
+            <div class="card-body">
+                <div class="day-chart" style="height:150px;">
+                    @for (var i = 0; i < days.Count; i++)
+                    {
+                        var h = Math.Max(4, (int)Math.Round(perDay[i] * 130d / max));
+                        <div class="bar" style="height:@h px;">
+<em>@(perDay?.Count > i ? perDay[i] : 0)</em>
+                        <span>@(days?.Count > i ? days[i].ToString("ddd") : "")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Status split</div>
+            <div class="card-body">
+                <div class="mb-2">Total <strong>@(ViewBag.Completed + ViewBag.Pending + ViewBag.NotCompleted)</strong> vehicles</div>
+                <ul class="list-group list-group-flush" style="font-size:14px;">
+                    <li class="list-group-item d-flex"><span>Completed</span><strong class="ms-auto">@ViewBag.Completed</strong></li>
+                    <li class="list-group-item d-flex"><span style="color:#d97706;">Pending</span><strong class="ms-auto">@ViewBag.Pending</strong></li>
+                    <li class="list-group-item d-flex"><span style="color:#dc2626;">Not completed</span><strong class="ms-auto">@ViewBag.NotCompleted</strong></li>
+                </ul>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Transactions by direction</div>
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-fill text-center">
+                        <div class="n" style="font-size:26px;font-weight:800;">@ViewBag.InCount</div>
+                        <div class="text-muted small">IN</div>
+                    </div>
+                    <div class="flex-fill text-center">
+                        <div class="n" style="font-size:26px;font-weight:800;">@ViewBag.OutCount</div>
+                        <div class="text-muted small">OUT</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

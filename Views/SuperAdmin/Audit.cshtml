@@ -1,0 +1,53 @@
+@model List<AuditLog>
+@{
+    ViewData["Title"] = "Audit log";
+    var user = ViewBag.User as string;
+    var action = ViewBag.Action as string;
+}
+
+<div class="page-title">Audit log</div>
+<div class="page-sub mb-3">Every important change and who made it.</div>
+
+<div class="card">
+    <div class="card-header">
+        <form method="get" class="row g-2">
+            <div class="col-md-4">
+                <input class="form-control form-control-sm" name="user" value="@user" placeholder="User" />
+            </div>
+            <div class="col-md-4">
+                <input class="form-control form-control-sm" name="action" value="@action" placeholder="Action" />
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary btn-sm" style="background:#0ea5e9;border-color:#0ea5e9;">FILTER</button>
+            </div>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr><th>Time</th><th>User</th><th>Action</th><th>Record</th><th>Change</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td class="mono">@a.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(a.User?.FullName ?? a.User?.Username ?? "System")</td>
+                        <td>@a.Action</td>
+                        <td class="mono">@a.RecordId</td>
+                        <td style="font-size:12px;color:#64748b;">
+                            @if (!string.IsNullOrEmpty(a.NewValues))
+                            {
+                                <span>@a.NewValues.Substring(0, Math.Min(a.NewValues.Length, 90))</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="5" class="empty">No audit entries.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

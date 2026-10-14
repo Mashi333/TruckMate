@@ -1,0 +1,75 @@
+@model List<WeighingTransaction>
+@{
+    ViewData["Title"] = "Expired pending";
+    var expiryDays = ViewBag.ExpiryDays as int? ?? 7;
+}
+
+<div class="page-title">Expired pending</div>
+<div class="page-sub mb-3">Pending vehicles that did not return within @expiryDays days become Not completed.</div>
+
+<div class="card">
+    <div class="card-header">Not completed</div>
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Vehicle</th>
+                    <th class="num">1st weight</th>
+                    <th>First weighed</th>
+                    <th class="num">Days</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    var days = (int)Math.Floor((DateTime.UtcNow - t.FirstWeighedAt).TotalDays);
+                    <tr>
+                        <td class="mono">@t.TicketNo</td>
+                        <td><strong>@t.VehicleNo</strong></td>
+                        <td class="num mono">@t.FirstWeight.ToString("#,##0.###") kg</td>
+                        <td class="mono">@t.FirstWeighedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="num">@days</td>
+                        <td><span class="badge badge-notcompleted">Not completed</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary re-open" data-id="@t.TransactionId" data-label="@t.TicketNo (@t.VehicleNo)">Reopen</button>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="7" class="empty">No expired (Not completed) records.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3" id="reopenPanel" style="display:none;">
+    <div class="card-header">Reopen record <span id="reopenLabel"></span></div>
+    <div class="card-body">
+        <form asp-action="Reopen" method="post">
+            <input type="hidden" name="id" id="reopenId" />
+            <label class="form-label" for="reopenReason">Reason *</label>
+            <input class="form-control mb-2" name="reason" id="reopenReason" required placeholder="The record returns to Pending. The reason and your name are logged." />
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" style="background:#0ea5e9;border-color:#0ea5e9;">REOPEN</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="document.querySelector('#reopenPanel').style.display='none'">CANCEL</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll(".re-open").forEach(function (b) {
+            b.addEventListener("click", function () {
+                document.querySelector("#reopenId").value = b.getAttribute("data-id");
+                document.querySelector("#reopenLabel").textContent = b.getAttribute("data-label");
+                document.querySelector("#reopenPanel").style.display = "";
+            });
+        });
+    </script>
+}

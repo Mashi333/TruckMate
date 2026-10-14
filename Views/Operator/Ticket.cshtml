@@ -1,0 +1,102 @@
+@model WeighingTransaction
+@{
+    ViewData["Title"] = "Weighbridge Ticket";
+    var round = ViewBag.Round as int? ?? 1;
+    var s = ViewBag.Settings as TruckMate.Services.AppSettings;
+}
+
+<div class="d-md-flex align-items-start justify-content-between mb-3">
+    <div>
+        <div class="page-title">Weighbridge Ticket</div>
+        <div class="page-sub">Transaction @Model.TicketNo · @(round == 2 ? "Final" : "First round") · Status: @Model.Status</div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Back to Operation</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="ticket mx-auto">
+            <div class="t-head">
+                <h1>@(s?.CompanyName ?? "COMPANY") WEIGHBRIDGE TICKET</h1>
+                <div class="copy">ORIGINAL COPY</div>
+            </div>
+
+            <div class="ticket-grid mt-3">
+                <div class="t-col">
+                    <div class="t-row"><span class="k">TRANSACTION NO</span><span class="mono">@Model.TicketNo</span></div>
+                    <div class="t-row"><span class="k">VEHICLE NO</span><span>@Model.VehicleNo</span></div>
+                    <div class="t-row"><span class="k">MODE</span><span>@Model.Direction - @Model.SubType</span></div>
+                    <div class="t-row"><span class="k">SUPPLIER</span><span>@Model.Supplier</span></div>
+                    <div class="t-row"><span class="k">MATERIAL</span><span>@Model.Material?.Name</span></div>
+
+                    <div class="t-gap"></div>
+
+                    <div class="t-row"><span class="k">1ST WEIGHT (kg)</span><span class="mono">@Model.FirstWeight.ToString("#,##0.###")</span></div>
+                    <div class="t-row"><span class="k">2ND WEIGHT (kg)</span><span class="mono">@(Model.SecondWeight?.ToString("#,##0.###"))</span></div>
+                    <div class="t-row"><span class="k">NET WEIGHT (kg)</span><span class="mono">@(Model.NetWeight?.ToString("#,##0.###"))</span></div>
+
+                    <div class="t-gap"></div>
+
+                    <div class="t-row"><span class="k">1ST REMARK</span><span>@Model.Remark</span></div>
+                    <div class="t-row"><span class="k">2ND REMARK</span><span>@Model.SecondRemark</span></div>
+                </div>
+                <div class="t-col">
+                    <div class="t-row"><span class="k">TRANSPORTER</span><span>@Model.Transporter</span></div>
+                    <div class="t-row"><span class="k">DRIVER</span><span>@Model.DriverDetails</span></div>
+                    <div class="t-row"><span class="k">DATE/TIME IN</span><span class="mono">@Model.FirstWeighedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span></div>
+                    <div class="t-row"><span class="k">DATE/TIME OUT</span><span class="mono">@(Model.SecondWeighedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</span></div>
+                </div>
+            </div>
+
+            <div class="t-fill">
+                <div>OPERATOR SIGNATURE</div>
+                <div>DRIVER SIGNATURE</div>
+                <div>CHECKED BY SUPERVISOR</div>
+            </div>
+            <div class="t-foot">@(s?.TicketFooterText)</div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Issue ticket</div>
+            <div class="card-body">
+                <form asp-action="IssueTicket" method="post">
+                    <input type="hidden" name="id" value="@Model.TransactionId" />
+                    <input type="hidden" name="round" value="@round" />
+
+                    <label class="form-label fw-semibold">Copy type</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="duplicate" value="false" id="copyOriginal" checked />
+                        <label class="form-check-label" for="copyOriginal">Original copy</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="duplicate" value="true" id="copyDuplicate" />
+                        <label class="form-check-label" for="copyDuplicate">Duplicate copy</label>
+                    </div>
+
+                    <label class="form-label fw-semibold">Print Mode</label>
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="radio" name="outputType" value="PRINT" id="pmPrint" checked />
+                        <label class="form-check-label" for="pmPrint">Print ticket</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="outputType" value="PDF" id="pmPdf" />
+                        <label class="form-check-label" for="pmPdf">Save as PDF on this computer</label>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-lg" style="background:#0ea5e9;border-color:#0ea5e9;color:#fff;">
+                            PRINT TICKET / SAVE AS PDF
+                        </button>
+                    </div>
+                </form>
+
+                @if (round == 2)
+                {
+                    <a class="btn btn-outline-secondary w-100 mt-2" asp-action="Reprint">Go to Re-Print</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

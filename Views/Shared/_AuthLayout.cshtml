@@ -1,0 +1,53 @@
+@inject TruckMate.Services.BrandingService Branding
+@{
+    var logoUrl = Branding.GetLogoRelativeUrl();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · TruckMate Weighbridge</title>
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("tmTheme");
+                if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+                document.documentElement.setAttribute("data-bs-theme", t);
+            } catch (e) {
+                document.documentElement.setAttribute("data-bs-theme", "light");
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/truckmate.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="auth-wrap">
+        <div class="auth-left">
+            <div class="brand">
+                @if (logoUrl is not null)
+                {
+                    <img src="@logoUrl" alt="Company logo" class="auth-logo" />
+                }
+                TruckMate
+                <small>Weighbridge Management System</small>
+            </div>
+            <p class="tagline">Reliable, modern and occupant-friendly control for daily weighbridge operations.</p>
+            <div class="scale-pill">
+                <span class="scale-state zero"><span class="dot"></span> 0 kg</span>
+                <span>Powered by Hayleys Aventura (Pvt) Ltd</span>
+            </div>
+            <div class="powered">© @DateTime.Now.Year TruckMate Weighbridge Management System</div>
+        </div>
+        <div class="auth-right">
+            <div class="auth-card">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

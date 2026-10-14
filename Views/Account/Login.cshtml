@@ -1,0 +1,62 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "_AuthLayout";
+}
+<h2>Welcome back</h2>
+<p class="sub">Please sign in to continue to TruckMate</p>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger py-2">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
+
+<form asp-action="Login" method="post" novalidate>
+    <div class="mb-3">
+        <label asp-for="Username" class="form-label"></label>
+        <input asp-for="Username" class="form-control form-control-lg" autocomplete="username" autofocus />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label"></label>
+        <div class="input-group input-group-lg">
+            <input asp-for="Password" id="password" class="form-control" autocomplete="current-password" />
+            <button class="btn btn-outline-secondary" type="button" id="showPwd">SHOW</button>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center mb-4" style="font-size:13px;">
+        <span class="text-muted"><i class="bi"></i> Secure access</span>
+        <a asp-action="ForgotPassword" class="ms-auto">Forgot password?</a>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg w-100" style="background:#0ea5e9;border-color:#0ea5e9;">LOGIN TO SYSTEM</button>
+
+    @if (!string.IsNullOrEmpty(ViewData["ReturnUrl"] as string))
+    {
+        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+    }
+</form>
+
+<div class="text-muted mt-3" style="font-size:12px;">
+    You are taken to your Operator, Admin or Super Admin panel based on the role assigned to you.
+    <div class="mt-2">
+        Demo logins: <code>operator / Operator@123</code> ·
+        <code>admin / Admin@123</code> ·
+        <code>superadmin / Super@123</code>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("showPwd").addEventListener("click", function () {
+            var p = document.getElementById("password");
+            p.type = p.type === "password" ? "text" : "password";
+            this.textContent = p.type === "password" ? "SHOW" : "HIDE";
+        });
+    </script>
+}

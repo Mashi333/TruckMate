@@ -1,0 +1,117 @@
+@model TruckMate.Services.AppSettings
+@inject TruckMate.Services.BrandingService Branding
+@{
+    ViewData["Title"] = "Settings";
+    var logoUrl = Branding.GetLogoRelativeUrl();
+}
+
+<div class="page-title">Settings</div>
+<div class="page-sub mb-3">Rules, tickets and hardware for the whole system.</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card mb-3">
+            <div class="card-header">Business rules</div>
+            <div class="card-body">
+                <form asp-action="Settings" method="post" id="settingsForm">
+                    <div class="mb-3">
+                        <label class="form-label" asp-for="PendingExpiryDays">Days before a pending record becomes Not completed</label>
+                        <input asp-for="PendingExpiryDays" class="form-control" type="number" min="1" />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input asp-for="RequireReasonForManualSave" class="form-check-input" />
+                        <label class="form-check-label" asp-for="RequireReasonForManualSave">Require a reason for manual save</label>
+                    </div>
+
+                    <div class="fw-semibold mb-2">Tickets and PDF</div>
+                    <div class="mb-3">
+                        <label class="form-label" asp-for="TicketFooterText">Ticket footer text</label>
+                        <textarea asp-for="TicketFooterText" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" asp-for="PdfSaveFolder">PDF save folder on this computer</label>
+                        <input asp-for="PdfSaveFolder" class="form-control" />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input asp-for="AutoSavePdfWhenNotPrinted" class="form-check-input" />
+                        <label class="form-check-label" asp-for="AutoSavePdfWhenNotPrinted">Save a PDF automatically when the ticket is not printed</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" asp-for="CompanyName">Company name (ticket header)</label>
+                        <input asp-for="CompanyName" class="form-control" />
+                    </div>
+
+                    <button class="btn btn-primary" style="background:#0ea5e9;border-color:#0ea5e9;">SAVE SETTINGS</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-3">
+            <div class="card-header">Company branding</div>
+            <div class="card-body">
+                @if (logoUrl is not null)
+                {
+                    <div class="mb-3">
+                        <img src="@logoUrl" alt="Company logo" class="tm-logo-preview" />
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted" style="font-size:14px;">No logo uploaded yet.</p>
+                }
+
+                <form asp-action="UploadLogo" method="post" enctype="multipart/form-data" class="mb-2">
+                    <label class="form-label" for="logo">Company logo (PNG, JPG, GIF or WEBP · max 5 MB)</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/png,image/jpeg,image/gif,image/webp" required />
+                        <button type="submit" class="btn btn-primary" style="background:#0ea5e9;border-color:#0ea5e9;">UPLOAD</button>
+                    </div>
+                    <div class="form-text">Saved on this computer under <code>wwwroot/uploads</code> — not stored in the database.</div>
+                </form>
+
+                @if (logoUrl is not null)
+                {
+                    <form asp-action="RemoveLogo" method="post" onsubmit="return confirm('Remove the company logo?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">REMOVE LOGO</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Hardware</div>
+            <div class="card-body">
+                <form asp-action="TestConnections" method="post">
+                    <div class="mb-3">
+                        <label class="form-label" asp-for="ScalePort">Scale port</label>
+                        <input asp-for="ScalePort" class="form-control" />
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="testBtn">TEST CONNECTIONS</button>
+                    </div>
+                </form>
+                <ul class="list-group list-group-flush" style="font-size:14px;">
+                    <li class="list-group-item d-flex"><span>Indicator port <code class="ms-2">@Model.IndicatorPort</code></span><span class="ms-auto text-muted">Not tested (simulated)</span></li>
+                    <li class="list-group-item d-flex"><span>Camera</span><span class="ms-auto text-muted">Not tested (simulated)</span></li>
+                    <li class="list-group-item d-flex"><span>Barrier controller</span><span class="ms-auto text-muted">Not tested (simulated)</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("testBtn").addEventListener("click", function () {
+            this.textContent = "Testing…";
+            fetch("/api/scale/snapshot")
+                .then(function (r) { return r.json(); })
+                .then(function (s) {
+                    alert(s.online
+                        ? "Connections OK (simulated): indicator online, barriers ready, light ready, camera ready."
+                        : "Indicator offline: check the cable or restart the indicator.");
+                    this.textContent = "TEST CONNECTIONS";
+                });
+        });
+    </script>
+}

@@ -1,0 +1,134 @@
+@model SecondWeightViewModel
+@{
+    ViewData["Title"] = "Second Weight Entry";
+}
+
+<div class="d-md-flex align-items-start justify-content-between mb-3">
+    <div>
+        <div class="page-title">Second Weight Entry</div>
+        <div class="page-sub">Confirm the second weight and finalize the transaction. · Step 2 of 2</div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Back to Operation</a>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger py-2">
+        <ul class="mb-0 mt-1">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="live-scale" id="scale-widget">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-uppercase" style="font-size:11px;color:#94a3b8;letter-spacing:1px;">2nd weight</span>
+                <span class="scale-state nosignal" id="scale-state"><span class="dot"></span> No signal</span>
+            </div>
+            <div class="scale-readout mt-2" id="scale-readout" data-scale-widget>-- <small>kg</small></div>
+            <div class="mt-2" style="font-size:13px;color:#e2e8f0;">
+                <span class="text-uppercase" style="color:#94a3b8;">Net weight</span><br />
+                <span class="fw-bold" style="font-size:20px;" id="net-weight">0 <small>kg</small></span>
+                <span class="text-muted" style="font-size:12px;">&nbsp;= |1st − 2nd|</span>
+            </div>
+            <div class="text-light mt-2" style="font-size:13px;" id="scale-message">Vehicle on scale – waiting for stable weight…</div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Second round · read-only</span>
+                <span class="badge badge-pending">Pending</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 mb-3" style="font-size:14px;">
+                    <div class="col-md-6"><span class="text-muted">Transaction No</span><br /><strong class="mono">@Model.TicketNo</strong></div>
+                    <div class="col-md-6"><span class="text-muted">Vehicle Number</span><br /><strong>@Model.VehicleNo</strong></div>
+                    <div class="col-md-6"><span class="text-muted">Direction / Sub Type</span><br />@Model.DirectionAndSubType</div>
+                    <div class="col-md-6"><span class="text-muted">Supplier</span><br />@Model.Supplier</div>
+                    <div class="col-md-6"><span class="text-muted">Material</span><br />@Model.Material</div>
+                    <div class="col-md-6"><span class="text-muted">Transporter / Driver</span><br />@Model.TransporterDriver</div>
+                    <div class="col-md-6">
+                        <span class="text-muted">1st Weight</span><br />
+                        <strong class="mono">@Model.FirstWeight.ToString("#,##0.###") kg</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted">First weighed</span><br />
+                        <span class="mono">@Model.FirstWeighedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span> · @Model.FirstOperator
+                    </div>
+                </div>
+
+                <form asp-action="SecondWeight" method="post" id="secondForm" novalidate>
+                    <input type="hidden" asp-for="TransactionId" />
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label asp-for="SecondRemark" class="form-label"></label>
+                            <input asp-for="SecondRemark" class="form-control" placeholder="2nd remark (optional)" />
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="form-label fw-semibold">Final capture</div>
+                        <div class="d-flex gap-4">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="ManualSave" value="false" id="autoCapture" checked />
+                                <label class="form-check-label" for="autoCapture">Auto final capture</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="ManualSave" value="true" id="manualCapture" />
+                                <label class="form-check-label" for="manualCapture">Manual save</label>
+                            </div>
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:12px;">Auto capture saves when the weight is stable. Switch to Manual save to record a reason.</div>
+                    </div>
+
+                    <div id="manualReasonBox" class="mt-3 d-none">
+                        <label class="form-label" for="ManualReason">Manual save reason</label>
+                        <input asp-for="ManualReason" class="form-control" placeholder="Saving without auto capture is logged with your name and the time." />
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <a asp-action="Index" class="btn btn-secondary">CANCEL</a>
+                        <button type="submit" class="btn btn-primary ms-auto" style="background:#0ea5e9;border-color:#0ea5e9;">SAVE FINAL</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var firstWeight = @(Model.FirstWeight.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        function updateNet() {
+            var el = document.querySelector("#scale-readout");
+            if (!el) return;
+            var txt = el.textContent.replace(/[^\d.,-]/g, "").replace(",", "");
+            var w = parseFloat(txt);
+            if (isNaN(w)) return;
+            var net = Math.abs(firstWeight - w);
+            document.querySelector("#net-weight").innerHTML = net.toLocaleString("en-US", { maximumFractionDigits: 3 }) + ' <small>kg</small>';
+        }
+
+        var observer = new MutationObserver(updateNet);
+        var ro = document.querySelector("#scale-readout");
+        if (ro) observer.observe(ro, { childList: true, subtree: true, characterData: true });
+        updateNet();
+
+        document.querySelectorAll('input[name="ManualSave"]').forEach(function (r) {
+            r.addEventListener("change", function () {
+                var manual = document.querySelector("#manualCapture").checked;
+                document.querySelector("#manualReasonBox").classList.toggle("d-none", !manual);
+                var reason = document.querySelector("#ManualReason");
+                if (reason) reason.required = manual;
+            });
+        });
+    </script>
+}

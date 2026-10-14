@@ -1,0 +1,95 @@
+@model List<WeighingTransaction>
+@{
+    ViewData["Title"] = "Re-Print Tickets";
+    var counts = ViewBag.ReprintCounts as Dictionary<long, int> ?? new Dictionary<long, int>();
+    var search = ViewBag.Search as string;
+}
+
+<div class="page-title">Re-Print Tickets</div>
+<div class="page-sub mb-3">Search recent transactions and print duplicate copies. Duplicate Copy Mode</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form asp-action="Reprint" method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Ticket Number</label>
+                <input class="form-control" name="search" value="@search" placeholder="26-00026" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Vehicle Number</label>
+                <input class="form-control" name="vehicleSearch" placeholder="LP-7516" disabled />
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100" style="background:#0ea5e9;border-color:#0ea5e9;">SEARCH</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Recent / Search Results</div>
+    <div class="table-responsive">
+        <table class="table-tm">
+            <thead>
+                <tr>
+                    <th>Ticket no</th>
+                    <th>Vehicle no</th>
+                    <th>Direction</th>
+                    <th>Sub type</th>
+                    <th>Supplier</th>
+                    <th>Material</th>
+                    <th>Status</th>
+                    <th class="num">Reprints</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td class="mono"><a asp-action="Ticket" asp-route-id="@t.TransactionId" asp-route-round="2">@t.TicketNo</a></td>
+                        <td><strong>@t.VehicleNo</strong></td>
+                        <td>@t.Direction</td>
+                        <td>@t.SubType</td>
+                        <td>@t.Supplier</td>
+                        <td>@t.Material?.Name</td>
+                        <td><span class="badge badge-@(t.Status.ToString().ToLowerInvariant())">@t.Status.ToString().Replace("_"," ")</span></td>
+                        <td class="num">@(counts.ContainsKey(t.TransactionId) ? counts[t.TransactionId] : 0)</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary select-dup" data-id="@t.TransactionId" data-label="@t.TicketNo (@t.VehicleNo)">Select for duplicate</button>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="9" class="empty">No transactions found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-3" id="dupPanel" style="display:none;">
+    <div class="card-header">Duplicate copy</div>
+    <div class="card-body">
+        <form asp-action="PrintDuplicate" method="post">
+            <input type="hidden" name="id" id="dupId" />
+            <p class="mb-3" style="font-size:14px;">
+                Selected ticket: <strong id="dupLabel">—</strong>
+            </p>
+            <button class="btn btn-danger">PRINT DUPLICATE</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll(".select-dup").forEach(function (b) {
+            b.addEventListener("click", function () {
+                document.querySelector("#dupId").value = b.getAttribute("data-id");
+                document.querySelector("#dupLabel").textContent = b.getAttribute("data-label");
+                document.querySelector("#dupPanel").style.display = "";
+            });
+        });
+    </script>
+}
