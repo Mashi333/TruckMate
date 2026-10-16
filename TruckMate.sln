@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TruckMate", "TruckMate.csproj", "{BBE8D7D9-88F8-458E-A7B3-B36C7ABA9915}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WeighAgent", "EdgeAgent\WeighAgent.csproj", "{0BF14A6A-9D80-4C88-8EB6-230DE12631B4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BBE8D7D9-88F8-458E-A7B3-B36C7ABA9915}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBE8D7D9-88F8-458E-A7B3-B36C7ABA9915}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBE8D7D9-88F8-458E-A7B3-B36C7ABA9915}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBE8D7D9-88F8-458E-A7B3-B36C7ABA9915}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BF14A6A-9D80-4C88-8EB6-230DE12631B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BF14A6A-9D80-4C88-8EB6-230DE12631B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BF14A6A-9D80-4C88-8EB6-230DE12631B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BF14A6A-9D80-4C88-8EB6-230DE12631B4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D6E2E1EE-B4D1-47C5-AEDF-E0ABE3F02B8F}
+	EndGlobalSection
+EndGlobal

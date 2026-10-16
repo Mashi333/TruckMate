@@ -7,6 +7,14 @@
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }
+    },
+    "WeighAgent (COM11 test)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "Agent__ComPort": "COM11"
+      }
     }
   }
 }

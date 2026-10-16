@@ -44,6 +44,10 @@ dotnet --version
 
 ## Getting Started
 
+**Visual Studio 2026 (18.0 or later):** open `TruckMate.sln`, pick a launch profile from the toolbar (`http` for the mock scale, `http (real scale)` for weights from the agent or simulator, `selftest` for the self-test) and press Ctrl+F5. Visual Studio 2022 cannot target .NET 10.
+
+Command line:
+
 1. Clone the repository:
 
    ```powershell
@@ -54,7 +58,7 @@ dotnet --version
 2. Restore dependencies:
 
    ```powershell
-   dotnet restore
+   dotnet restore TruckMate.sln
    ```
 
 3. Run the application:
@@ -202,7 +206,7 @@ Set `ComPort`, `BaudRate`, `Parity`, `ServerUrl` and `ApiKey` in `C:\WeighAgent\
 Build:
 
 ```powershell
-dotnet build
+dotnet build TruckMate.sln
 ```
 
 Run without rebuilding dependencies:
