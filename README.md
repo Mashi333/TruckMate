@@ -2,6 +2,21 @@
 
 TruckMate is an ASP.NET Core MVC application for recording and managing vehicle weighing transactions. It supports first and second weighings, ticket generation, operator authentication, reports, audit logging, configurable system settings, and simulated scale integration for development.
 
+## Table of Contents
+
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Requirements](#requirements)
+- [Getting Started](#getting-started)
+- [Development Login Accounts](#development-login-accounts)
+- [Configuration](#configuration)
+- [Database and Generated Files](#database-and-generated-files)
+- [Scale Integration](#scale-integration)
+- [Useful Commands](#useful-commands)
+- [Project Structure](#project-structure)
+- [Production Considerations](#production-considerations)
+- [License and Ownership](#license-and-ownership)
+
 ## Features
 
 - Operator, administrator, and super-administrator roles
@@ -24,8 +39,7 @@ TruckMate is an ASP.NET Core MVC application for recording and managing vehicle 
 - .NET 10
 - ASP.NET Core MVC
 - Entity Framework Core 10
-- SQLite by default
-- SQL Server provider available
+- SQLite by default (SQL Server provider available)
 - Cookie authentication
 - QuestPDF for ticket documents
 - Bootstrap and jQuery assets under `wwwroot/lib`
@@ -44,9 +58,18 @@ dotnet --version
 
 ## Getting Started
 
-**Visual Studio 2026 (18.0 or later):** open `TruckMate.sln`, pick a launch profile from the toolbar (`http` for the mock scale, `http (real scale)` for weights from the agent or simulator, `selftest` for the self-test) and press Ctrl+F5. Visual Studio 2022 cannot target .NET 10.
+### Visual Studio
 
-Command line:
+Requires **Visual Studio 2026 (18.0 or later)**. Visual Studio 2022 cannot target .NET 10.
+
+1. Open `TruckMate.sln`.
+2. Pick a launch profile from the toolbar:
+   - `http` - mock scale
+   - `http (real scale)` - weights from the agent or simulator
+   - `selftest` - runs the self-test
+3. Press **Ctrl+F5**.
+
+### Command line
 
 1. Clone the repository:
 
@@ -76,20 +99,20 @@ Command line:
 
    The exact ports are defined in `Properties/launchSettings.json`.
 
-The application creates `truckmate.db` automatically on first startup and seeds development data, users, materials, master data, settings, and sample transactions.
+The application creates `truckmate.db` automatically on first startup and seeds development data: users, materials, master data, settings, and sample transactions.
 
 ## Development Login Accounts
 
 The first startup creates these development accounts:
 
-| Role | Username | Password |
-| --- | --- | --- |
-| Operator | `operator` | `Operator@123` |
-| Operator | `operator2` | `Operator@123` |
-| Admin | `admin` | `Admin@123` |
-| Super Admin | `superadmin` | `Super@123` |
+| Role        | Username      | Password       |
+| ----------- | ------------- | -------------- |
+| Operator    | `operator`    | `Operator@123` |
+| Operator    | `operator2`   | `Operator@123` |
+| Admin       | `admin`       | `Admin@123`    |
+| Super Admin | `superadmin`  | `Super@123`    |
 
-These credentials are stored in the source seeder for local development. Change or replace them before deploying to a shared or production environment.
+> **Warning:** These credentials are stored in the source seeder for local development only. Change or replace them before deploying to a shared or production environment.
 
 ## Configuration
 
@@ -103,9 +126,7 @@ The default configuration is in `appsettings.json`:
 }
 ```
 
-The application also loads `appsettings.Development.json` when running in the Development environment.
-
-ASP.NET Core environment variables can override configuration values. For example, PowerShell can override the database connection string without editing the JSON file:
+The application also loads `appsettings.Development.json` when running in the Development environment. ASP.NET Core environment variables can override configuration values. For example, PowerShell can override the database connection string without editing the JSON file:
 
 ```powershell
 $env:ConnectionStrings__Default = "Data Source=truckmate-dev.db"
@@ -126,14 +147,14 @@ truckmate.db
 
 The database is created automatically through `EnsureCreatedAsync()` during startup. Local database files, build output, logs, and IDE-specific files are excluded by `.gitignore`.
 
-For a clean local reset, stop the application and remove the database files, then run the application again:
+For a clean local reset, stop the application, remove the database files, then run the application again:
 
 ```powershell
 Remove-Item .\truckmate.db, .\truckmate.db-shm, .\truckmate.db-wal -ErrorAction SilentlyContinue
 dotnet run
 ```
 
-This deletes local data and recreates the seeded database. Do not use this procedure for a production database.
+> **Warning:** This deletes local data and recreates the seeded database. Do not use this procedure for a production database.
 
 ## Scale Integration
 
@@ -141,24 +162,34 @@ Weight comes from the weighbridge indicator through a small edge agent:
 
 ```text
 Indicator --RS-232--> Edge agent (EdgeAgent/, Windows service) --HTTP POST /api/weight--> Server
+
 Server: WeightCache -> AgentScaleService (IScaleService) -> operator pages
 ```
 
-The server is the only source of truth for weight. Save actions read the weight on the server and never accept a weight from the browser. A weight is saved only when the indicator is online, the reading is stable, it is no older than `StaleAfterSeconds`, and it is at least `MinWeightKg`. Proceed is allowed only when the stable reading is within `ZeroToleranceKg` of zero.
+The server is the only source of truth for weight. Save actions read the weight on the server and never accept a weight from the browser.
+
+A weight is saved only when:
+
+- the indicator is online,
+- the reading is stable,
+- the reading is no older than `StaleAfterSeconds`, and
+- the reading is at least `MinWeightKg`.
+
+Proceed is allowed only when the stable reading is within `ZeroToleranceKg` of zero.
 
 ### Mock or real scale
 
 The `Scale` section of `appsettings.json` controls this:
 
-| Setting | Meaning | Default |
-| --- | --- | --- |
-| `UseMock` | `true` uses `MockScaleService` and shows the operator's scale simulator panel. Only allowed in Development; the app refuses to start otherwise. | `false` (`true` in Development) |
-| `ScaleId` | Weighbridge this server reads. Must match the agent's `ScaleId`. | `WB1` |
-| `ZeroToleranceKg` | How far from 0 an empty scale may read. Set to one or two scale divisions. | `0` |
-| `MinWeightKg` | Lowest weight that can be saved. | `100` |
-| `MaxWeightKg` | Readings above this are rejected by the weight API. | `80000` |
-| `StaleAfterSeconds` | Older readings count as "No signal". | `5` |
-| `AgentApiKey` | Secret the agent sends in `X-Api-Key`. Empty means every reading is refused. Set it with the `Scale__AgentApiKey` environment variable in production. | empty (`dev-secret` in Development) |
+| Setting             | Meaning                                                                                                                                                     | Default                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `UseMock`           | `true` uses `MockScaleService` and shows the operator's scale simulator panel. Only allowed in Development; the app refuses to start otherwise.             | `false` (`true` in Development)                 |
+| `ScaleId`           | Weighbridge this server reads. Must match the agent's `ScaleId`.                                                                                            | `WB1`                                           |
+| `ZeroToleranceKg`   | How far from 0 an empty scale may read. Set to one or two scale divisions.                                                                                  | `0`                                             |
+| `MinWeightKg`       | Lowest weight that can be saved.                                                                                                                            | `100`                                           |
+| `MaxWeightKg`       | Readings above this are rejected by the weight API.                                                                                                         | `80000`                                         |
+| `StaleAfterSeconds` | Older readings count as "No signal".                                                                                                                        | `5`                                             |
+| `AgentApiKey`       | Secret the agent sends in `X-Api-Key`. Empty means every reading is refused. Set it with the `Scale__AgentApiKey` environment variable in production.      | empty (`dev-secret` in Development)             |
 
 To run the app against real weights during development:
 
@@ -168,17 +199,34 @@ Scale__UseMock=false dotnet run
 
 ### Indicator simulator
 
-`Tools/indicator_sim.py` imitates a continuous-output indicator (Toledo `ST,GS,+001234.5kg` or plain `+  1234 kg` lines). Send it straight to the weight API:
+`Tools/indicator_sim.py` imitates a continuous-output indicator (Toledo `ST,GS,+001234.5kg` or plain `+ 1234 kg` lines). Send it straight to the weight API:
 
 ```bash
 python3 Tools/indicator_sim.py -o http --url http://localhost:5095/api/weight --api-key dev-secret --echo
 ```
 
-Type `t 15000` (truck arrives), `l` (leaves), `p`/`r` (unplug/replug), `g` (garbage line), `q` (quit). Serial output (`-o serial --port ...`) needs `pip install pyserial`.
+Simulator commands:
+
+| Command    | Action                |
+| ---------- | --------------------- |
+| `t 15000`  | Truck arrives         |
+| `l`        | Truck leaves          |
+| `p` / `r`  | Unplug / replug       |
+| `g`        | Garbage line          |
+| `q`        | Quit                  |
+
+Serial output (`-o serial --port ...`) needs `pip install pyserial`.
 
 ### Edge agent
 
-`EdgeAgent/` is a .NET Worker Service. It reads the COM port, parses each line (`IndicatorParser.cs`), uses the indicator's `ST`/`US` flag for stability (or 5 identical readings when the line has no flag), and posts the latest reading about 4 times a second plus a 1-second heartbeat. Settings are in `EdgeAgent/appsettings.json` under `Agent`.
+`EdgeAgent/` is a .NET Worker Service. It:
+
+- reads the COM port,
+- parses each line (`IndicatorParser.cs`),
+- uses the indicator's `ST`/`US` flag for stability (or 5 identical readings when the line has no flag), and
+- posts the latest reading about 4 times a second, plus a 1-second heartbeat.
+
+Settings are in `EdgeAgent/appsettings.json` under `Agent`.
 
 Run it locally against a virtual serial pair (macOS: `socat -d -d pty,raw,echo=0 pty,raw,echo=0`; Windows: com0com):
 
@@ -199,7 +247,9 @@ sc.exe failure WeighAgent reset= 86400 actions= restart/5000/restart/5000/restar
 sc.exe start WeighAgent
 ```
 
-Set `ComPort`, `BaudRate`, `Parity`, `ServerUrl` and `ApiKey` in `C:\WeighAgent\appsettings.json` first. The parser and serial settings must be checked against a real sample from the site indicator before go-live.
+Set `ComPort`, `BaudRate`, `Parity`, `ServerUrl` and `ApiKey` in `C:\WeighAgent\appsettings.json` first.
+
+> **Note:** The parser and serial settings must be checked against a real sample from the site indicator before go-live.
 
 ## Useful Commands
 
@@ -209,7 +259,7 @@ Build:
 dotnet build TruckMate.sln
 ```
 
-Run without rebuilding dependencies:
+Run without restoring dependencies:
 
 ```powershell
 dotnet run --no-restore
@@ -227,20 +277,20 @@ The `--selftest` argument is handled by the application and runs its built-in se
 
 ```text
 TruckMate/
-├── Controllers/       MVC controllers and HTTP endpoints
-├── Data/              EF Core DbContext and database seeding
-├── Domain/            Domain entities and enums
-├── Models/            MVC view models
-├── Services/          Business services and integrations
-├── Views/             Razor views
-├── wwwroot/           CSS, JavaScript, and static assets
-├── Properties/        Launch profiles
-├── EdgeAgent/         Windows service that reads the indicator and posts weights
-├── Tools/             indicator_sim.py (indicator simulator for testing)
-├── Docs/              Design documents
-├── Program.cs         Application startup and dependency injection
-├── TruckMate.csproj   Project and NuGet package configuration
-├── appsettings.json   Base application configuration
+├── Controllers/                MVC controllers and HTTP endpoints
+├── Data/                       EF Core DbContext and database seeding
+├── Domain/                     Domain entities and enums
+├── Models/                     MVC view models
+├── Services/                   Business services and integrations
+├── Views/                      Razor views
+├── wwwroot/                    CSS, JavaScript, and static assets
+├── Properties/                 Launch profiles
+├── EdgeAgent/                  Windows service that reads the indicator and posts weights
+├── Tools/                      indicator_sim.py (indicator simulator for testing)
+├── Docs/                       Design documents
+├── Program.cs                  Application startup and dependency injection
+├── TruckMate.csproj            Project and NuGet package configuration
+├── appsettings.json            Base application configuration
 └── appsettings.Development.json
 ```
 
@@ -257,5 +307,8 @@ Before production deployment:
 7. Review authorization rules and audit-log retention.
 8. Run the application behind a suitable ASP.NET Core host or reverse proxy.
 
+## License and Ownership
 
- 
+This project is maintained as the TruckMate weighbridge management application for Hayleys Aventura (Pvt) Ltd.
+
+Add a project-specific license before distributing the software outside the intended organization.
