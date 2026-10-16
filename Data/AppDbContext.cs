@@ -79,7 +79,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(15).HasDefaultValue(TransactionStatus.PENDING);
             e.Property(x => x.IsCancelled).HasDefaultValue(false);
             e.Property(x => x.CancelReason).HasColumnType("text");
-            e.Property(x => x.RowVersion).HasDefaultValue(1);
+            e.Property(x => x.RowVersion).HasDefaultValue(1).IsConcurrencyToken();
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 

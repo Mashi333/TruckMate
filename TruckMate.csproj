@@ -16,4 +16,12 @@
     <PackageReference Include="QuestPDF" Version="2026.9.1" />
   </ItemGroup>
 
+  <!-- The edge agent is a separate project; keep it out of the web app's build. -->
+  <ItemGroup>
+    <Compile Remove="EdgeAgent/**" />
+    <Content Remove="EdgeAgent/**" />
+    <None Remove="EdgeAgent/**" />
+    <EmbeddedResource Remove="EdgeAgent/**" />
+  </ItemGroup>
+
 </Project>

@@ -42,7 +42,12 @@
             }
         });
 
-        if (proceed) proceed.disabled = !(snap.online && snap.isZero);
+        if (proceed) proceed.disabled = !(snap.online && snap.isStable && snap.isZero);
+
+        // Save buttons: enabled only for a stable, non-zero weight.
+        document.querySelectorAll("[data-requires-stable]").forEach(function (btn) {
+            btn.disabled = !(snap.online && snap.isStable && !snap.isZero);
+        });
         if (gateMsg && gateOk) {
             gateOk.classList.toggle("d-none", !(snap.online && snap.isZero));
             gateMsg.classList.toggle("d-none", snap.online && snap.isZero);
@@ -128,7 +133,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         refreshScale();
-        setInterval(refreshScale, 1200);
+        setInterval(refreshScale, 500);
 
         var sidebar = document.getElementById("tmSidebar");
         var backdrop = document.getElementById("tmBackdrop");

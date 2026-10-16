@@ -17,7 +17,24 @@ builder.Services.AddScoped<IPasswordHasher<Operator>, PasswordHasher<Operator>>(
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<TicketNumberService>();
 builder.Services.AddSingleton<TicketPdfService>();
-builder.Services.AddSingleton<IScaleService, MockScaleService>();
+builder.Services.Configure<ScaleOptions>(builder.Configuration.GetSection("Scale"));
+builder.Services.AddSingleton<WeightCache>();
+
+// Development uses the mock scale; everywhere else reads real weights posted by the edge agent.
+var useMockScale = builder.Configuration.GetValue("Scale:UseMock", false);
+if (useMockScale)
+{
+    if (!builder.Environment.IsDevelopment())
+        throw new InvalidOperationException("Scale:UseMock must be false outside Development.");
+
+    builder.Services.AddSingleton<MockScaleService>();
+    builder.Services.AddSingleton<IScaleService>(sp => sp.GetRequiredService<MockScaleService>());
+    builder.Services.AddSingleton<IScaleSimulator>(sp => sp.GetRequiredService<MockScaleService>());
+}
+else
+{
+    builder.Services.AddSingleton<IScaleService, AgentScaleService>();
+}
 builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddSingleton<BrandingService>();
 builder.Services.AddScoped<ReportService>();

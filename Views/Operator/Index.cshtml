@@ -1,4 +1,6 @@
 @model List<WeighingTransaction>
+@using Microsoft.Extensions.Hosting
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @{
     ViewData["Title"] = "Operator Control Center";
     var settings = ViewBag.Settings as TruckMate.Services.AppSettings;
@@ -32,24 +34,27 @@
             </div>
         </div>
 
-        <div class="sim-panel mt-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="sim-title">Scale simulator</span>
-                <span class="badge bg-warning text-dark">mock device</span>
+        @if (Env.IsDevelopment() && Context.RequestServices.GetService(typeof(TruckMate.Services.IScaleSimulator)) != null)
+        {
+            <div class="sim-panel mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="sim-title">Scale simulator</span>
+                    <span class="badge bg-warning text-dark">mock device</span>
+                </div>
+                <p class="mb-2" style="font-size:12px;">Simulate the indicator reading while a vehicle is on the scale.</p>
+                <div class="sim-preset">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="0">0 kg (empty)</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="50">50 kg</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="1250">1,250 kg</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-online="true">Online</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-sim-online="false">Offline</button>
+                </div>
+                <div class="input-group mt-2">
+                    <input type="number" class="form-control form-control-sm" id="simCustom" placeholder="Custom weight (kg)" data-sim-enter />
+                    <button class="btn btn-sm btn-outline-dark" type="button" data-sim-custom="#simCustom">Set</button>
+                </div>
             </div>
-            <p class="mb-2" style="font-size:12px;">Simulate the indicator reading while a vehicle is on the scale.</p>
-            <div class="sim-preset">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="0">0 kg (empty)</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="50">50 kg</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-weight="1250">1,250 kg</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-sim-online="true">Online</button>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-sim-online="false">Offline</button>
-            </div>
-            <div class="input-group mt-2">
-                <input type="number" class="form-control form-control-sm" id="simCustom" placeholder="Custom weight (kg)" data-sim-enter />
-                <button class="btn btn-sm btn-outline-dark" type="button" data-sim-custom="#simCustom">Set</button>
-            </div>
-        </div>
+        }
     </div>
 
     <div class="col-lg-8">

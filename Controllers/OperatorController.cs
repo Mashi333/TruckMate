@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TruckMate.Data;
 using TruckMate.Domain;
 using TruckMate.Models;
@@ -18,9 +19,11 @@ public class OperatorController : Controller
     private readonly AuditService _audit;
     private readonly TicketNumberService _tickets;
     private readonly TicketPdfService _pdf;
+    private readonly ScaleOptions _scaleOpt;
 
     public OperatorController(AppDbContext db, IScaleService scale, SettingsService settings,
-        AuditService audit, TicketNumberService tickets, TicketPdfService pdf)
+        AuditService audit, TicketNumberService tickets, TicketPdfService pdf,
+        IOptions<ScaleOptions> scaleOptions)
     {
         _db = db;
         _scale = scale;
@@ -28,6 +31,19 @@ public class OperatorController : Controller
         _audit = audit;
         _tickets = tickets;
         _pdf = pdf;
+        _scaleOpt = scaleOptions.Value;
+    }
+
+    // Returns an error message, or null when the weight may be saved.
+    private string? WeightProblem(ScaleSnapshot snap)
+    {
+        if (!snap.Online || snap.Weight is null)
+            return "No signal from the indicator. Check the cable or restart the indicator, then recheck.";
+        if (!snap.IsStable)
+            return "The weight is not stable yet. Wait until the reading settles, then save.";
+        if (snap.Weight.Value < _scaleOpt.MinWeightKg)
+            return $"The scale reads {snap.Weight.Value:N0} kg, below the minimum of {_scaleOpt.MinWeightKg:N0} kg. Make sure the vehicle is fully on the scale.";
+        return null;
     }
 
     public static string NormalizeVehicle(string vehicleNo)
@@ -62,7 +78,8 @@ public class OperatorController : Controller
             .FirstOrDefaultAsync(t => t.VehicleNo == vehicle && t.Status == TransactionStatus.PENDING);
         var round = (short)(pending is null ? 1 : 2);
 
-        var passed = snap.Online && snap.Weight == 0m;
+        var passed = snap.Online && snap.IsStable && snap.Weight is not null
+                     && Math.Abs(snap.Weight.Value) <= _scaleOpt.ZeroToleranceKg;
 
         var opId = User.Id() ?? 0;
         _db.ScaleChecks.Add(new ScaleCheck
@@ -108,9 +125,10 @@ public class OperatorController : Controller
         var vehicle = NormalizeVehicle(vm.VehicleNo);
         var snap = _scale.GetSnapshot();
 
-        if (!snap.Online || snap.Weight is null)
+        var problem = WeightProblem(snap);
+        if (problem is not null)
         {
-            ModelState.AddModelError(string.Empty, "No signal from the indicator. Check the cable or restart the indicator, then recheck.");
+            ModelState.AddModelError(string.Empty, problem);
             return View(vm);
         }
 
@@ -196,9 +214,10 @@ public class OperatorController : Controller
         }
 
         var snap = _scale.GetSnapshot();
-        if (!snap.Online || snap.Weight is null)
+        var problem = WeightProblem(snap);
+        if (problem is not null)
         {
-            ModelState.AddModelError(string.Empty, "No signal from the indicator. Check the cable or restart the indicator, then recheck.");
+            ModelState.AddModelError(string.Empty, problem);
         }
 
         if (!ModelState.IsValid)
@@ -228,7 +247,15 @@ public class OperatorController : Controller
             oldValues: old,
             newValues: new { tx.SecondWeight, tx.NetWeight, status = tx.Status.ToString(), manual = vm.ManualSave, reason = vm.ManualReason });
 
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["Error"] = "This record was just updated by someone else. Search for it again and check it.";
+            return RedirectToAction(nameof(Index));
+        }
 
         TempData["Success"] = $"2nd weight {snap.Weight.Value:N0} kg saved. Net weight {net:N0} kg. Status: Completed.";
         return RedirectToAction(nameof(Ticket), new { id = tx.TransactionId, round = 2 });

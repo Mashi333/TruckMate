@@ -133,9 +133,69 @@ This deletes local data and recreates the seeded database. Do not use this proce
 
 ## Scale Integration
 
-The default service registration uses `MockScaleService`, allowing the application to run without physical weighbridge equipment. Scale-related settings such as `ScalePort` and `IndicatorPort` are seeded with `COM1` and `COM2` and can be changed through system settings.
+Weight comes from the weighbridge indicator through a small edge agent:
 
-Hardware integration should be implemented behind the `IScaleService` abstraction. The development API includes endpoints used for reading snapshots and simulating scale or hardware state.
+```text
+Indicator --RS-232--> Edge agent (EdgeAgent/, Windows service) --HTTP POST /api/weight--> Server
+Server: WeightCache -> AgentScaleService (IScaleService) -> operator pages
+```
+
+The server is the only source of truth for weight. Save actions read the weight on the server and never accept a weight from the browser. A weight is saved only when the indicator is online, the reading is stable, it is no older than `StaleAfterSeconds`, and it is at least `MinWeightKg`. Proceed is allowed only when the stable reading is within `ZeroToleranceKg` of zero.
+
+### Mock or real scale
+
+The `Scale` section of `appsettings.json` controls this:
+
+| Setting | Meaning | Default |
+| --- | --- | --- |
+| `UseMock` | `true` uses `MockScaleService` and shows the operator's scale simulator panel. Only allowed in Development; the app refuses to start otherwise. | `false` (`true` in Development) |
+| `ScaleId` | Weighbridge this server reads. Must match the agent's `ScaleId`. | `WB1` |
+| `ZeroToleranceKg` | How far from 0 an empty scale may read. Set to one or two scale divisions. | `0` |
+| `MinWeightKg` | Lowest weight that can be saved. | `100` |
+| `MaxWeightKg` | Readings above this are rejected by the weight API. | `80000` |
+| `StaleAfterSeconds` | Older readings count as "No signal". | `5` |
+| `AgentApiKey` | Secret the agent sends in `X-Api-Key`. Empty means every reading is refused. Set it with the `Scale__AgentApiKey` environment variable in production. | empty (`dev-secret` in Development) |
+
+To run the app against real weights during development:
+
+```bash
+Scale__UseMock=false dotnet run
+```
+
+### Indicator simulator
+
+`Tools/indicator_sim.py` imitates a continuous-output indicator (Toledo `ST,GS,+001234.5kg` or plain `+  1234 kg` lines). Send it straight to the weight API:
+
+```bash
+python3 Tools/indicator_sim.py -o http --url http://localhost:5095/api/weight --api-key dev-secret --echo
+```
+
+Type `t 15000` (truck arrives), `l` (leaves), `p`/`r` (unplug/replug), `g` (garbage line), `q` (quit). Serial output (`-o serial --port ...`) needs `pip install pyserial`.
+
+### Edge agent
+
+`EdgeAgent/` is a .NET Worker Service. It reads the COM port, parses each line (`IndicatorParser.cs`), uses the indicator's `ST`/`US` flag for stability (or 5 identical readings when the line has no flag), and posts the latest reading about 4 times a second plus a 1-second heartbeat. Settings are in `EdgeAgent/appsettings.json` under `Agent`.
+
+Run it locally against a virtual serial pair (macOS: `socat -d -d pty,raw,echo=0 pty,raw,echo=0`; Windows: com0com):
+
+```bash
+cd EdgeAgent
+Agent__ComPort=/dev/ttys005 dotnet run
+```
+
+Publish and install on the weighbridge PC:
+
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+```
+
+```powershell
+sc.exe create WeighAgent binPath= "C:\WeighAgent\WeighAgent.exe" start= auto
+sc.exe failure WeighAgent reset= 86400 actions= restart/5000/restart/5000/restart/5000
+sc.exe start WeighAgent
+```
+
+Set `ComPort`, `BaudRate`, `Parity`, `ServerUrl` and `ApiKey` in `C:\WeighAgent\appsettings.json` first. The parser and serial settings must be checked against a real sample from the site indicator before go-live.
 
 ## Useful Commands
 
@@ -171,6 +231,9 @@ TruckMate/
 ├── Views/             Razor views
 ├── wwwroot/           CSS, JavaScript, and static assets
 ├── Properties/        Launch profiles
+├── EdgeAgent/         Windows service that reads the indicator and posts weights
+├── Tools/             indicator_sim.py (indicator simulator for testing)
+├── Docs/              Design documents
 ├── Program.cs         Application startup and dependency injection
 ├── TruckMate.csproj   Project and NuGet package configuration
 ├── appsettings.json   Base application configuration
@@ -185,7 +248,7 @@ Before production deployment:
 2. Store connection strings and secrets outside source control.
 3. Use a production database strategy and backups instead of relying on local SQLite files.
 4. Configure HTTPS certificates and secure cookie settings for the hosting environment.
-5. Configure real scale, indicator, camera, and barrier integrations.
+5. Set `Scale:AgentApiKey` (environment variable), confirm `ZeroToleranceKg` and `MinWeightKg` for the site scale, install the edge agent, and configure camera and barrier integrations.
 6. Set a production PDF output location with appropriate permissions.
 7. Review authorization rules and audit-log retention.
 8. Run the application behind a suitable ASP.NET Core host or reverse proxy.

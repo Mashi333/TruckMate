@@ -56,9 +56,9 @@ public static class SelfTest
             if (am.StatusCode == HttpStatusCode.OK && amMatch.Success && amMatch.Groups[2].Value == "Cement 42.5") newMatId = amMatch.Groups[1].Value;
             pass.Check("Add new material inline", am.StatusCode == HttpStatusCode.OK && amMatch.Success && amMatch.Groups[2].Value == "Cement 42.5", fail, "AddMaterial returned " + (int)am.StatusCode + " " + amBody);
 
-            // 4. Scale gate check via simulate -> 50 kg
-            var sim = await client.PostFormAsync("/api/scale/simulate", new Dictionary<string, string> { ["weight"] = "50", ["__RequestVerificationToken"] = token });
-            pass.Check("Simulate 50 kg", sim.StatusCode == HttpStatusCode.OK, fail, "Simulate failed " + sim.StatusCode);
+            // 4. Scale gate check via simulate -> 13,250 kg
+            var sim = await client.PostFormAsync("/api/scale/simulate", new Dictionary<string, string> { ["weight"] = "13250", ["__RequestVerificationToken"] = token });
+            pass.Check("Simulate 13,250 kg", sim.StatusCode == HttpStatusCode.OK, fail, "Simulate failed " + sim.StatusCode);
 
             // 5. First weight
             var fw = await client.PostFormAsync("/Operator/FirstWeight", new Dictionary<string, string>
@@ -73,7 +73,7 @@ public static class SelfTest
             if (!m.Success) m = Regex.Match(fwUrl, @"Ticket\?id=(\d+)");
             if (m.Success) { tid = long.Parse(m.Groups[1].Value); pass($"FirstWeight created (transaction id {tid})"); }
             else { fail("FirstWeight did not redirect to ticket: " + fwUrl); }
-            pass.Check("Status Pending + 1st weight 50 kg", (await fw.Content.ReadAsStringAsync()).Contains("ORIGINAL COPY"), fail, "ticket page missing 1st round");
+            pass.Check("Status Pending + 1st weight 13,250 kg", (await fw.Content.ReadAsStringAsync()).Contains("ORIGINAL COPY"), fail, "ticket page missing 1st round");
 
             // 6. Return: scale 0 then 1250
             await client.PostFormAsync("/api/scale/simulate", new Dictionary<string, string> { ["weight"] = "0", ["__RequestVerificationToken"] = token });
@@ -90,7 +90,7 @@ public static class SelfTest
                 ["TransactionId"] = tid.ToString(), ["SecondRemark"] = "final", ["ManualSave"] = "false", ["__RequestVerificationToken"] = token
             });
             var swPostBody = await swPost.Content.ReadAsStringAsync();
-            pass.Check("2nd weight saved, net 1,200 kg", swPostBody.Contains("Net weight 1,200") && swPostBody.Contains("Status: Completed"), fail, "net/status not as expected");
+            pass.Check("2nd weight saved, net 12,000 kg", swPostBody.Contains("Net weight 12,000") && swPostBody.Contains("Status: Completed"), fail, "net/status not as expected");
 
             // 7. PDF ticket
             var pdf = await client.PostFormAsync("/Operator/IssueTicket", new Dictionary<string, string>
@@ -110,7 +110,7 @@ public static class SelfTest
             if (tx is null) fail("Transaction missing for TX99-AB");
             else
             {
-                pass.Check("Net weight correct", tx.NetWeight == 1200m, fail, $"net={tx.NetWeight}");
+                pass.Check("Net weight correct", tx.NetWeight == 12000m, fail, $"net={tx.NetWeight}");
                 pass.Check("Status COMPLETED", tx.Status == TransactionStatus.COMPLETED, fail, $"status={tx.Status}");
                 pass.Check("Ticket row logged", tx.Tickets.Count > 0, fail, "no ticket log rows");
                 pass.Check("Free-text driver saved", tx.DriverDetails == "Sanjeewa", fail, $"driver={tx.DriverDetails}");

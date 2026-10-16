@@ -27,12 +27,17 @@ public class HardwareStatus
 public interface IScaleService
 {
     ScaleSnapshot GetSnapshot();
+}
+
+// Development-only controls for the mock scale. Never registered when a real scale is used.
+public interface IScaleSimulator
+{
     void SimulateWeight(decimal? weight);
     void SetOnline(bool online);
     void SetHardware(string device, bool ready);
 }
 
-public class MockScaleService : IScaleService
+public class MockScaleService : IScaleService, IScaleSimulator
 {
     private readonly object _lock = new();
     private decimal? _weight = 0m;

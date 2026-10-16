@@ -82,7 +82,15 @@ public class AdminController : Controller
         tx.UpdatedAt = DateTime.UtcNow;
         _audit.Record(User.Id(), "Cancelled", "weighing_transactions", tx.TransactionId,
             oldValues: old, newValues: new { cancelled = true, reason });
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["Error"] = "This record was just updated by someone else. Check it and try again.";
+            return RedirectToAction(nameof(Records), new { id });
+        }
 
         TempData["Success"] = $"Record {tx.TicketNo} cancelled.";
         return RedirectToAction(nameof(Records));
@@ -173,7 +181,15 @@ public class AdminController : Controller
         _audit.Record(User.Id(), "Reopened", "weighing_transactions", tx.TransactionId,
             oldValues: new { status = "NOT_COMPLETED" },
             newValues: new { status = "PENDING", reason });
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["Error"] = "This record was just updated by someone else. Check it and try again.";
+            return RedirectToAction(nameof(Expired));
+        }
 
         TempData["Success"] = $"Record {tx.TicketNo} reopened to Pending.";
         return RedirectToAction(nameof(Expired));

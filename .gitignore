@@ -28,3 +28,14 @@ coverage/
 .DS_Store
 Thumbs.db
 
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Edge agent build and publish output
+EdgeAgent/bin/
+EdgeAgent/obj/
+EdgeAgent/publish/
