@@ -260,3 +260,5 @@ Before production deployment:
 ## License and Ownership
 
 This project is maintained as the TruckMate weighbridge management application for Hayleys Aventura (Pvt) Ltd. Add a project-specific license before distributing the software outside the intended organization.
+#   T r u c k M a t e  
+ 
