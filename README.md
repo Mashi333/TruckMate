@@ -257,10 +257,5 @@ Before production deployment:
 7. Review authorization rules and audit-log retention.
 8. Run the application behind a suitable ASP.NET Core host or reverse proxy.
 
-## License and Ownership
 
-This project is maintained as the TruckMate weighbridge management application for Hayleys Aventura (Pvt) Ltd. Add a project-specific license before distributing the software outside the intended organization.
-#   T r u c k M a t e  
- #   T r u c k M a t e  
- #   T r u c k M a t e  
  
